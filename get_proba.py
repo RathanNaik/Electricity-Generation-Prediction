@@ -67,6 +67,7 @@ def file_write_json(dic, path, file_name):
 
 def get_prob(folders, category):
 	path = os.getcwd()
+	#print path
 	total = 0
 	power_plant_dic = {}
 	plant_state_dic = {}
@@ -129,10 +130,16 @@ def get_prob(folders, category):
 		error, output = plmapt(get_transtition_matrix, inp, [], len(state_dic.keys())/2)
 		transaction_matrix = output[-1]
 
-		dic_list = [(power_plant_dic,"power_plant"),(indi_prob_dic,"indi_prob"),(state_dic,"state"), (transaction_matrix,"transaction_matrix"),(plant_state_dic,"power_state")]
+		dic_list = [
+				(power_plant_dic,"power_plant"),
+				(indi_prob_dic,"indi_prob"),
+				(state_dic,"state"), 
+				(transaction_matrix,"transaction_matrix"),
+				(plant_state_dic,"power_state")
+				]
 		inp = [(i[0],path,i[1]) for i in dic_list]
 		error, output = plmapt(file_write_json, inp, [], len(inp))
-		
+	return (state_dic,indi_prob_dic,transaction_matrix)
 		
 		
 if __name__=="__main__":
