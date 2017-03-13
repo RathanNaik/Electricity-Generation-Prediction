@@ -121,4 +121,5 @@ def rain_fun(path):
 	return (transaction_matrix_dic,indi_prob_dic,state_dic,plant)
 
 if __name__=="__main__":
-	rain_fun("")
+	path = os.getcwd()
+	rain_fun(path)
