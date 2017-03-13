@@ -7,6 +7,7 @@ from plmap import plmapt
 from getFile import monthToNum, numToMonth
 from get_proba import get_proba
 from get_proba import file_write_json#(dic, path, file_name)
+
 def get_rainfall_data(plant, state, district, path):
 	rainfall_data = {}
 	num_month = numToMonth()
