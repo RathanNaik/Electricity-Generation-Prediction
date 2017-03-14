@@ -33,23 +33,26 @@ def get_proba(key, value, prob_dic, state_dic):
 	
 	prev, increase, decrease, equal, total = 0,0,0,0,0
 	state_dic[key] = []
-	for i in value:
+	for actual in value:
+		#print actual, est
+		actual = actual.replace(",","")
 		
-		i = i.replace(",","")
-		i = int(round(float(i),2))
-		if int(prev)<int(i):
-			state_dic[key].append(1)
+		actual = int(round(float(actual),2))
+		
+		diff = abs(int(actual)-int(prev))
+		if int(prev)<int(actual)  and diff > 75:
+			state_dic[key].append(1) 
 			increase +=1
-		elif int(prev)>int(i):
+		elif int(prev)>int(actual) and diff >75:
 			state_dic[key].append(2)
 			decrease +=1
 		else:
 			state_dic[key].append(3)
 			equal +=1
-		prev = i
+		prev = actual
 		total +=1
 	
-		
+	
 	prob_dic[key] = [round(increase/float(total),2), round(decrease/float(total),2), round(equal/float(total),2)] 
 	#print prob_dic
 	
