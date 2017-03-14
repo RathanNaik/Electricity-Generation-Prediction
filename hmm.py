@@ -72,9 +72,9 @@ if __name__=="__main__":
 	t = 3
 	#print observation_matrix[plant]
 	#print observation_matrix[plant][0][0]
-	#sequence_observation = [3,2,1 ] #chanrapur
+	sequence_observation = [3,2,1 ] #chanrapur
 	#sequence_observation = [3,3,3] #dn tata
-	sequence_observation = [3,3,1]
+	#sequence_observation = [3,3,1]
 	state_sequence = ["i","d","e"]
 	perms = []
 	
