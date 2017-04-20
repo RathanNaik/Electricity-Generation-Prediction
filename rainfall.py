@@ -4,11 +4,12 @@ import csv
 from collections import Counter
 from pprint import pprint
 
-from plmap import plmapt
-from getFile import monthToNum, numToMonth
-#from get_proba import get_proba
-from get_proba import file_write_json#(dic, path, file_name)
 import numpy as np
+from plmap import plmapt
+
+from getFile import month_to_num, num_to_month
+from get_proba import file_write_json
+
 
 def get_proba(key, value, prob_dic, state_dic):
 	"""
@@ -36,15 +37,14 @@ def get_proba(key, value, prob_dic, state_dic):
 	
 		
 	prob_dic[key] = [round(increase/float(total),2), round(decrease/float(total),2), round(equal/float(total),2)] 
-	#print prob_dic
 	
 	return prob_dic,state_dic
 
 
 def get_rainfall_data(plant, state, district, path):
 	rainfall_data = {}
-	num_month = numToMonth()
-	month_to_num = monthToNum()
+	num_month = num_to_month()
+	
 	with open(path+state+".csv") as file:
 		reader = csv.DictReader(file)
 
@@ -54,32 +54,38 @@ def get_rainfall_data(plant, state, district, path):
 				#print "dadfsd"
 				year = int(float(row["Year"]))
 				
-				rainfall_data[year] = []
+				
 				#print row["January"]
 				for month_num in range(1,13):
 					#print num_month
 					#print num_month[month_num].capitalize()
-					rainfall_data[year].append(row[num_month[month_num].capitalize()])
+					if rainfall_data.get(num_month[month_num]):
+						rainfall_data[num_month[month_num]].append(row[num_month[month_num].capitalize()])
+
+					else:
+						rainfall_data[num_month[month_num]] = []
+						rainfall_data[num_month[month_num]].append(row[num_month[month_num].capitalize()])
 
 	return rainfall_data
 
+
+
 def get_observation_matrix(state_dic,data,plant):
+
 	rain = []
-	for i in range(2008,2011):
-		if i == 2008:
-			#print state_dic[i]
-			for z in range(3,12):
-				#print state_dic[i]
-				rain.append(state_dic[i][z])
-		else:
-			for z in range(0,12):
-				rain.append(state_dic[i][z])
+	num_month = num_to_month()
+	
+	for i in range(1,12):
+		rain += [i for i in state_dic[num_month[i]]]
+		
+	
 	plant_state = []
 	for i in range(33):
 		 plant_state.append(data[plant][i])
 	
 	observation = zip(plant_state,rain)
 	return observation
+
 
 def get_observation_prob(observation,key):
 	transaction_matrix_dic={}
@@ -105,19 +111,23 @@ def get_observation_prob(observation,key):
 
 
 def rain_fun(path):
-	os.chdir(path)
+	#os.chdir(path)
 	#print path
-	with open(path+"/power_state.json") as data_file:
+	json_path = path+"\\json_files\\"
+	with open(json_path+"power_state.json") as data_file:
 		power_state = json.load(data_file)
 
-	with open(path+"/indi_prob.json") as data_file:
+	with open(json_path+"indi_prob.json") as data_file:
 		indi_prob = json.load(data_file)
 
-	with open(path+"/transaction_matrix.json") as data_file:
+	with open(json_path+"transaction_matrix.json") as data_file:
 		transaction_matrix = json.load(data_file)
 		
-	with open(path+'/state.json') as data_file:    
+	with open(json_path+'state.json') as data_file:    
 	    state = json.load(data_file)
+
+	with open(json_path+'consolidated_state.json') as data_file:    
+	    consolidated_state = json.load(data_file)
 
 	plant = "CHANDRAPUR(MAHARASHTRA) STPS"
 	#plant = "DURGAPUR TPS"
@@ -130,7 +140,7 @@ def rain_fun(path):
 	state_path = path+"/monthly-rainfall/"
 
 	rainfall_data = get_rainfall_data(plant, power_state[plant], district, state_path)
-	#print rainfall_data
+	
 	indi_prob_dic = {}
 	state_dic = {}
 
@@ -140,15 +150,12 @@ def rain_fun(path):
 	#pprint (output[-1])
 	indi_prob_dic = output[-1][0]
 	state_dic = output[-1][1]
-	#print state_dic
 	
-
-	observation = get_observation_matrix(state_dic,state,plant)
-	#print observation
+	observation = get_observation_matrix(state_dic,consolidated_state,plant)
 
 	#print state[plant]
 	transaction_matrix_dic =  get_observation_prob(observation,plant)
-
+	
 	dic_list = [
 		(rainfall_data,plant+" rainfall"),
 		(indi_prob_dic,plant+" indi_rain"),

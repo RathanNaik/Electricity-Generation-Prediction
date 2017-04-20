@@ -4,9 +4,11 @@ import operator
 from pprint import pprint
 import itertools as ite
 import json
-from get_proba import get_prob
-from tester import rain_fun
+
 from plmap import plmapt
+
+from get_proba import get_prob
+from rainfall import rain_fun
 from get_proba import file_write_json
 
 def state_dic():
@@ -42,21 +44,22 @@ def dp_way(perms,pi,plant_state_matrix,observation_matrix,t,sequence_observation
 			#print value
 			
 			if i == 0:
-				#print observation_matrix[value][sequence_observation[i]-1]
+				
 				x = pi[value]*observation_matrix[value][sequence_observation[i]-1]
 				#print x
 				p *= x
 			else:
 				value_1 = state_convert[string[sub_index+1]]-1
-				#print plant_state_matrix
+				
 				x = plant_state_matrix[value][value_1] * observation_matrix[value_1][sequence_observation[i]-1]
-				#print x
+				
+
 				p *=  x
 			i+=1
-
+		
 		state_sequence_dic[string] = p
 	
-	#pprint(state_sequence_dic)
+	pprint(state_sequence_dic)
 	return max(state_sequence_dic.iteritems(), key = operator.itemgetter(1))[0], state_sequence_dic
 
 
@@ -66,8 +69,9 @@ def error(actual, calcul):
 
 
 if __name__=="__main__":
+	
 	path = os.getcwd()
-	plant_states_dic, plant_indi_prob, plant_state_matrix = get_prob(["monthly-power-generation"],"THERMAL")
+	plant_states_dic, plant_indi_prob, plant_state_matrix,consolidated_dic = get_prob(["monthly-power-generation"],"THERMAL")
 	observation_matrix, rain_indi_prob, rain_state, plant = rain_fun(path)
 	t = 3
 	#print observation_matrix[plant]
@@ -82,10 +86,10 @@ if __name__=="__main__":
 
 	#perms = sorted(set(perms))
 
-	pi = plant_indi_prob[plant]
-	#print pi
+	pi = plant_indi_prob[plant]["december"]
+	
 	dp, state_sequence_dic = dp_way(perms, pi, plant_state_matrix[plant], observation_matrix[plant], t,sequence_observation)
-	print dp
+	print dp," dp"
 	hmm_dic = {}
 	#print hmm_way(state_sequence_dic,"i",t,hmm_dic)
 	for i in state_sequence:

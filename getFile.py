@@ -1,15 +1,19 @@
 import urllib as url
 import os, calendar
+
 from plmap import plmapt
 from csv_from_excel import csv_to_excel
-#f = read("url.txt","r")
-def monthToNum():
+from collections import OrderedDict as odict
+
+def month_to_num():
+
+
     d = {"january":1, "february":2,"march":3, "april":4,"may":5,"june":6,"july": 7, "august":8, "september": 9, "october" :10, "november" :11, "december": 12}
     
     return d
 
-def numToMonth():
-    rev_dic = {v:k for k, v in monthToNum().iteritems()}
+def num_to_month():
+    rev_dic = {v:k for k, v in month_to_num().iteritems()}
     return rev_dic
 
 def download_url(url_str, cal_dic, rev_dic):
@@ -22,7 +26,7 @@ def download_url(url_str, cal_dic, rev_dic):
     month_num = cal_dic[month]
     if not os.path.exists("./"+data_set):
         os.makedirs(data_set)
-    while i_year<=2016:
+    while i_year<=2015:
         
         directory = os.path.join("./"+data_set, str(i_year))
         #directory = "./"+str(i_year)
@@ -58,10 +62,10 @@ if __name__=="__main__":
         os.makedirs(path)
         
     csv_to_excel(path,".\Datasets\Rainfall\District-wise Rainfall data_2004-2010.xls")
-    cal_dic = monthToNum()
+    cal_dic = month_to_num()
     #download_url(f, cal_dic, numToMonth())
     with open("url.txt","r") as f:
-        inp = [(i.strip(),cal_dic, numToMonth()) for i in f.readlines()]
+        inp = [(i.strip(),cal_dic, num_to_month()) for i in f.readlines()]
         error, output = plmapt(download_url, inp, [], len(inp))
         print error
     
