@@ -31,6 +31,7 @@ def month_count():
 
 def get_transtition_matrix(key, value, transaction_matrix_dic,consolidated_dic):
 
+	
 	num_month_dic = num_to_month()
 	matrix = np.zeros((3,3))
 	
@@ -53,7 +54,7 @@ def get_transtition_matrix(key, value, transaction_matrix_dic,consolidated_dic):
 
 	transaction_matrix_dic[key] = matrix1
 	consolidated_dic[key] = consolidated_values
-
+	
 	return transaction_matrix_dic,consolidated_dic
 
 
@@ -100,7 +101,7 @@ def get_proba(key, value, prob_dic, state_dic):
 def file_write_json(dic, path, file_name):
 	f_json = json.dumps(dic)
 	#print path+"\\"+file_name
-	path = path+"/json_files/"
+	
 	if not os.path.exists(path):
 		os.makedirs(path)
 	with open(path+file_name+".json","w") as file:
@@ -108,13 +109,13 @@ def file_write_json(dic, path, file_name):
 
 
 
-def get_prob(folders, category):
+def get_prob(folders, category,fuel):
 	
 	path = os.getcwd()
 	
 	total = 0
 	power_plant_dic = {}
-	plant_state_dic = {}
+	plant_state_dic = defaultdict(list)
 	month_not_present = defaultdict(list)
 	power_plant_dic = defaultdict(dict)
 	for i in folders:
@@ -142,24 +143,25 @@ def get_prob(folders, category):
 							station_list = []
 							for row in reader:
 
-								if row["CATEGORY"] == category and row["FUEL"] == "COAL":
-									if power_plant_dic.get(row["STATION"]):
-										if not row["STATION"] in station_list:
-											power_plant_dic[row["STATION"]][month].append(row["ACTUAL GENERATION"])
-											station_list.append(row["STATION"])
+								if row["CATEGORY"] == category and row["FUEL"] == fuel:
+									row_station = row["STATION"].replace("  "," ")
+									if power_plant_dic.get(row_station):
+										if not row_station in station_list:
+											power_plant_dic[row_station][month].append(row["ACTUAL GENERATION"])
+											station_list.append(row_station)
 										
 
 
 									else:
-										station_list.append([row["STATION"]])
-										power_plant_dic[row["STATION"]] = month_count()
+										station_list.append([row_station])
+										power_plant_dic[row_station] = month_count()
 
 										if len(month_not_present.keys())!=0:
 											for key,value in month_not_present.iteritems():
-												power_plant_dic[row["STATION"]][key] += value
+												power_plant_dic[row_station][key] += value
 
-										power_plant_dic[row["STATION"]][month].append(row["ACTUAL GENERATION"])
-										plant_state_dic[row["STATION"]] = row["STATE"]
+										power_plant_dic[row_station][month].append(row["ACTUAL GENERATION"])
+										plant_state_dic[row_station].append(row["STATE"])
 										
 						
 
@@ -175,14 +177,14 @@ def get_prob(folders, category):
 				
 		
 		power_plant_dic = default_to_regular(power_plant_dic)
-					
+		plant_state_dic = default_to_regular(plant_state_dic)
 
-
+		
 		indi_prob_dic = defaultdict(dict)
 		state_dic = defaultdict(dict)
 		# for key, value in power_plant_dic.iteritems():
 
-		# 	if key.__contains__("CHANDRAPUR(MAHARASHTRA)"):
+		# 	if key.__contains__("BHADRA"):
 				
 				
 		# 		x,y = get_proba(key,value, indi_prob_dic, state_dic)
@@ -202,12 +204,12 @@ def get_prob(folders, category):
 		indi_prob_dic,state_dic = output_dic
 		indi_prob_dic = default_to_regular(indi_prob_dic)
 		state_dic = default_to_regular(state_dic)
-		
+
 		transaction_matrix = {}
 		consolidated_dic = {}
 		# for key, value in state_dic.iteritems():
 
-		# 	if key.__contains__("AKALTARA"):
+		# 	if key.__contains__("NABI NAGAR TPP"):
 		# 		for x,v in value.iteritems():
 		# 			v = [str(i) for i in v]
 		# 			pprint(x+" : "+" ".join(v))
@@ -225,7 +227,7 @@ def get_prob(folders, category):
 		inp = [(key,value,transaction_matrix,consolidated_dic) for key, value in state_dic.iteritems()]
 		error, output = plmapt(get_transtition_matrix, inp, [], len(state_dic.keys())/2)
 		transaction_matrix,consolidated_dic = output[-1]
-
+		
 		dic_list = [
 				(power_plant_dic,"power_plant"),
 				(indi_prob_dic,"indi_prob"),
@@ -234,14 +236,14 @@ def get_prob(folders, category):
 				(consolidated_dic,"consolidated_state"),
 				(plant_state_dic,"power_state")
 				]
-		inp = [(i[0],path,i[1]) for i in dic_list]
+		inp = [(i[0],path+"\\json_files\\",i[1]) for i in dic_list]
 		error, output = plmapt(file_write_json, inp, [], len(inp))
-	return (state_dic,indi_prob_dic,transaction_matrix,consolidated_dic)
+	return (power_plant_dic,indi_prob_dic,state_dic,transaction_matrix,consolidated_dic,plant_state_dic)
 		
 		
 if __name__=="__main__":
 	folders = ["monthly-power-generation"]
 	
-	category = "THERMAL"
+	category = "HYDRO"
 	
-	get_prob(folders, category)
+	get_prob(folders, category,category)

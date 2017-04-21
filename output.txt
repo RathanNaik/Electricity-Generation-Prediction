@@ -1,0 +1,2 @@
+e i d	 rainfall sequence 
+dii predicted iid actual result

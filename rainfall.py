@@ -9,6 +9,7 @@ from plmap import plmapt
 
 from getFile import month_to_num, num_to_month
 from get_proba import file_write_json
+from get_proba import get_prob
 
 
 def get_proba(key, value, prob_dic, state_dic):
@@ -21,6 +22,7 @@ def get_proba(key, value, prob_dic, state_dic):
 	for i in value:
 		
 		i = i.replace(",","")
+		i = i.replace("N.A.","0.0")
 		i = int(round(float(i),2))
 		diff = abs(int(i)-int(prev))
 		if int(prev)<int(i) and diff > 5:
@@ -41,24 +43,18 @@ def get_proba(key, value, prob_dic, state_dic):
 	return prob_dic,state_dic
 
 
-def get_rainfall_data(plant, state, district, path):
+def get_rainfall_data(plant, state, district, path1,path2):
 	rainfall_data = {}
 	num_month = num_to_month()
-	
-	with open(path+state+".csv") as file:
-		reader = csv.DictReader(file)
 
+	with open(path2+state+".csv") as file:
+		reader = csv.DictReader(file)
 		for row in reader:
-			#print row["District"].lower(), district.lower()
+			
 			if row["District"].strip().lower() == district.lower():
-				#print "dadfsd"
-				year = int(float(row["Year"]))
 				
-				
-				#print row["January"]
 				for month_num in range(1,13):
-					#print num_month
-					#print num_month[month_num].capitalize()
+					
 					if rainfall_data.get(num_month[month_num]):
 						rainfall_data[num_month[month_num]].append(row[num_month[month_num].capitalize()])
 
@@ -66,6 +62,22 @@ def get_rainfall_data(plant, state, district, path):
 						rainfall_data[num_month[month_num]] = []
 						rainfall_data[num_month[month_num]].append(row[num_month[month_num].capitalize()])
 
+	
+	with open(path1+district+".csv") as file:
+		reader = csv.reader(file)
+
+		for index,row in enumerate(reader):
+			
+			month_num = index%12
+			
+
+			if rainfall_data.get(num_month[month_num+1]):
+				rainfall_data[num_month[month_num+1]].append(row[0])
+			else:
+				rainfall_data[num_month[month_num+1]] = []
+				rainfall_data[num_month[month_num+1]].append(row[0])
+
+	
 	return rainfall_data
 
 
@@ -75,16 +87,18 @@ def get_observation_matrix(state_dic,data,plant):
 	rain = []
 	num_month = num_to_month()
 	
-	for i in range(1,12):
-		rain += [i for i in state_dic[num_month[i]]]
+	for i in range(1,13):
 		
+		rain += [i for i in state_dic[num_month[i]]]
 	
 	plant_state = []
-	for i in range(33):
+	for i in range(36):
 		 plant_state.append(data[plant][i])
 	
-	observation = zip(plant_state,rain)
-	return observation
+	
+	observation = zip(plant_state,rain[48:84])
+	
+	return rain,observation
 
 
 def get_observation_prob(observation,key):
@@ -107,65 +121,64 @@ def get_observation_prob(observation,key):
 	
 	return transaction_matrix_dic
 
-	#for i in observation:
+	
 
 
-def rain_fun(path):
-	#os.chdir(path)
-	#print path
-	json_path = path+"\\json_files\\"
-	with open(json_path+"power_state.json") as data_file:
-		power_state = json.load(data_file)
+def rain_fun(path,power_plant_dic,indi_prob_dic,state_dic,transaction_matrix,consolidated_dic,plant_state_dic,plant):
+	
+	with open(path+"\\plant_district.csv") as f:
+		reader = csv.DictReader(f)
 
-	with open(json_path+"indi_prob.json") as data_file:
-		indi_prob = json.load(data_file)
+		for row in reader:
 
-	with open(json_path+"transaction_matrix.json") as data_file:
-		transaction_matrix = json.load(data_file)
+			if plant_state_dic.get(row["STATION"].replace("  "," ")):
+				if row["District"]:
+								
+					plant_state_dic[row["STATION"].replace("  "," ")].append(str(row["District"].capitalize().replace('\\xa0',' ')).strip())
+
+	plant_state_dic = {key:value for key,value in plant_state_dic.iteritems() if len(value) != 1 }	
+
+	if plant_state_dic.get(plant):
+	
+		state_path1 = path+"\\d2\\"
+		state_path2 = path+"\\monthly-rainfall\\"
+
+		rainfall_data = get_rainfall_data(plant, plant_state_dic[plant][0], plant_state_dic[plant][1], state_path1,state_path2)
 		
-	with open(json_path+'state.json') as data_file:    
-	    state = json.load(data_file)
+		indi_prob_dic = {}
+		state_dic = {}
 
-	with open(json_path+'consolidated_state.json') as data_file:    
-	    consolidated_state = json.load(data_file)
+		inp = [(key, value, indi_prob_dic, state_dic) for key, value in rainfall_data.iteritems()]
+		
+		error, output = plmapt(get_proba, inp, [], len(inp))
+		#pprint (output[-1])
+		indi_prob_dic = output[-1][0]
+		state_dic = output[-1][1]
+		
+		rain,observation = get_observation_matrix(state_dic,consolidated_dic,plant)
 
-	plant = "CHANDRAPUR(MAHARASHTRA) STPS"
-	#plant = "DURGAPUR TPS"
-	#plant = "Dr. N.TATA RAO TPS"
-	#plant = "GH TPS (LEH.MOH.)"
-	district = "Chandrapur"
-	#district = "BURDWAN"
-	#district = "Krishna"
-	#district = "Bhatinda"
-	state_path = path+"/monthly-rainfall/"
-
-	rainfall_data = get_rainfall_data(plant, power_state[plant], district, state_path)
-	
-	indi_prob_dic = {}
-	state_dic = {}
-
-	inp = [(key, value, indi_prob_dic, state_dic) for key, value in rainfall_data.iteritems()]
-	
-	error, output = plmapt(get_proba, inp, [], len(inp))
-	#pprint (output[-1])
-	indi_prob_dic = output[-1][0]
-	state_dic = output[-1][1]
-	
-	observation = get_observation_matrix(state_dic,consolidated_state,plant)
-
-	#print state[plant]
-	transaction_matrix_dic =  get_observation_prob(observation,plant)
-	
-	dic_list = [
-		(rainfall_data,plant+" rainfall"),
-		(indi_prob_dic,plant+" indi_rain"),
-		(state_dic,plant+" state_rainfall"),
-		(transaction_matrix_dic,plant+" observation_matrix")
-		]
-	inp = [(i[0],path,i[1]) for i in dic_list]
-	error, output = plmapt(file_write_json, inp, [], len(inp))
-	return (transaction_matrix_dic,indi_prob_dic,state_dic,plant)
+		#print state[plant]
+		transaction_matrix_dic =  get_observation_prob(observation,plant)
+		
+		
+		dic_list = [
+			(rainfall_data,plant+" rainfall"),
+			(indi_prob_dic,plant+" indi_rain"),
+			(state_dic,plant+" state_rainfall"),
+			(transaction_matrix_dic,plant+" observation_matrix"),
+			(plant_state_dic,"power_state"),
+			]
+		inp = [(i[0],path+"\\json_files\\",i[1]) for i in dic_list]
+		error, output = plmapt(file_write_json, inp, [], len(inp))
+		return (transaction_matrix_dic,indi_prob_dic,state_dic,observation,rain,plant)
+	else:
+		return ("District not present",0,0,0,0,0)
 
 if __name__=="__main__":
 	path = os.getcwd()
-	rain_fun(path)
+	folders = ["monthly-power-generation"]
+	plant = "SATPURA TPS"
+	category = "THERMAL"
+	fuel = "COAL"
+	power_plant_dic,indi_prob_dic,state_dic,transaction_matrix,consolidated_dic,plant_state_dic = get_prob(folders,category,fuel)
+	rain_fun(path,power_plant_dic,indi_prob_dic,state_dic,transaction_matrix,consolidated_dic,plant_state_dic,plant)
